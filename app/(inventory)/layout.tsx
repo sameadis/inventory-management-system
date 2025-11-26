@@ -28,13 +28,16 @@ export default async function InventoryLayout({
               </p>
             </div>
             <div className="flex items-center gap-4">
-              <div className="text-sm">
+              <div className="text-sm text-right">
                 <p className="font-medium">{user.email}</p>
+                <p className="text-xs text-muted-foreground">
+                  {process.env.NODE_ENV === "development" ? "Dev Mode" : "Production"}
+                </p>
               </div>
               <form action="/api/auth/signout" method="post">
                 <button
                   type="submit"
-                  className="text-sm text-muted-foreground hover:text-foreground"
+                  className="px-3 py-1.5 text-sm border rounded-md hover:bg-accent"
                 >
                   Sign Out
                 </button>

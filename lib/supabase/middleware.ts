@@ -33,8 +33,14 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // If user is not signed in and the current path is not /auth, redirect to /auth
-  if (!user && !request.nextUrl.pathname.startsWith("/auth")) {
+  // Protected routes - require authentication
+  const protectedPaths = ["/inventory"];
+  const isProtectedPath = protectedPaths.some((path) =>
+    request.nextUrl.pathname.startsWith(path)
+  );
+
+  // If user is not signed in and trying to access protected path, redirect to /auth
+  if (!user && isProtectedPath) {
     const redirectUrl = new URL("/auth", request.url);
     return NextResponse.redirect(redirectUrl);
   }
