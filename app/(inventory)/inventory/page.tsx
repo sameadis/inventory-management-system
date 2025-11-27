@@ -71,17 +71,48 @@ export default function DashboardPage() {
   });
 
   // Combine all activities and sort by date
+  type VerificationRow = {
+    id: string;
+    verification_date: string | null;
+    created_at: string | null;
+    condition: string | null;
+    asset?: { asset_tag_number?: string | null } | null;
+  };
+
+  type TransferRow = {
+    id: string;
+    created_at: string | null;
+    transfer_date: string | null;
+    approved_by: string | null;
+    asset?: { asset_tag_number?: string | null } | null;
+  };
+
+  type DisposalRow = {
+    id: string;
+    created_at: string | null;
+    disposal_date: string | null;
+    disposal_method: string | null;
+    rejected_by: string | null;
+    approved_by: string | null;
+    reviewed_by: string | null;
+    asset?: { asset_tag_number?: string | null } | null;
+  };
+
+  type ActivityType = "verification" | "transfer" | "disposal";
+
+  type Activity = {
+    id: string;
+    type: ActivityType;
+    date: string;
+    assetTag: string;
+    description: string;
+  };
+
   const recentActivities = useMemo(() => {
-    const activities: Array<{
-      id: string;
-      type: 'verification' | 'transfer' | 'disposal';
-      date: string;
-      assetTag: string;
-      description: string;
-    }> = [];
+    const activities: Activity[] = [];
 
     // Add verifications
-    verifications?.forEach((v: any) => {
+    verifications?.forEach((v: VerificationRow) => {
       activities.push({
         id: v.id,
         type: 'verification',
@@ -92,7 +123,7 @@ export default function DashboardPage() {
     });
 
     // Add transfers
-    recentTransfers?.forEach((t: any) => {
+    recentTransfers?.forEach((t: TransferRow) => {
       const status = t.transfer_date 
         ? 'Completed' 
         : t.approved_by 
@@ -108,7 +139,7 @@ export default function DashboardPage() {
     });
 
     // Add disposals
-    recentDisposals?.forEach((d: any) => {
+    recentDisposals?.forEach((d: DisposalRow) => {
       const status = d.rejected_by
         ? 'Rejected'
         : d.approved_by
@@ -131,7 +162,7 @@ export default function DashboardPage() {
     ).slice(0, 10);
   }, [verifications, recentTransfers, recentDisposals]);
 
-  const getActivityIcon = (type: 'verification' | 'transfer' | 'disposal') => {
+  const getActivityIcon = (type: ActivityType) => {
     switch (type) {
       case 'verification':
         return { Icon: CheckCircle, color: 'text-green-600' };
@@ -142,7 +173,7 @@ export default function DashboardPage() {
     }
   };
 
-  const getActivityLabel = (type: 'verification' | 'transfer' | 'disposal') => {
+  const getActivityLabel = (type: ActivityType) => {
     switch (type) {
       case 'verification':
         return 'Verification';

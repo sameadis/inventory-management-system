@@ -81,7 +81,20 @@ export default function TransfersPage() {
   });
 
   // Fetch ministries
-  const { data: ministries } = useQuery({
+  type Ministry = {
+    id: string;
+    name: string;
+  };
+
+  type AssetForTransfer = {
+    id: string;
+    asset_tag_number: string;
+    asset_description: string | null;
+    ministry_assigned: string | null;
+    physical_location: string | null;
+  };
+
+  const { data: ministries } = useQuery<Ministry[]>({
     queryKey: ["ministries"],
     queryFn: async () => {
       const { data, error } = await getMinistries();
@@ -89,12 +102,12 @@ export default function TransfersPage() {
         console.error("Error fetching ministries:", error);
         return [];
       }
-      return data ?? [];
+      return (data ?? []) as Ministry[];
     },
   });
 
   // Fetch assets
-  const { data: assets } = useQuery({
+  const { data: assets } = useQuery<AssetForTransfer[]>({
     queryKey: ["assets-for-transfer"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -108,7 +121,7 @@ export default function TransfersPage() {
         console.error("Error fetching assets:", error);
         return [];
       }
-      return data ?? [];
+      return (data ?? []) as AssetForTransfer[];
     },
   });
 
@@ -126,7 +139,7 @@ export default function TransfersPage() {
 
   const ministryMap = useMemo(() => {
     const map = new Map<string, string>();
-    ministries?.forEach((ministry: any) => {
+    ministries?.forEach((ministry) => {
       if (ministry.id) {
         map.set(ministry.id, ministry.name);
       }
@@ -424,8 +437,8 @@ export default function TransfersPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {ministries
-                          ?.filter((m: any) => m.id !== formData.previous_ministry)
-                          .map((ministry: any) => (
+                          ?.filter((m) => m.id !== formData.previous_ministry)
+                          .map((ministry) => (
                             <SelectItem key={ministry.id} value={ministry.id}>
                               {ministry.name}
                             </SelectItem>

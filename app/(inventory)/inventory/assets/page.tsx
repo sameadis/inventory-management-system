@@ -115,7 +115,12 @@ export default function AssetsPage() {
     },
   });
 
-  const { data: ministries } = useQuery({
+  type Ministry = {
+    id: string;
+    name: string;
+  };
+
+  const { data: ministries } = useQuery<Ministry[]>({
     queryKey: ["ministries"],
     queryFn: async () => {
       const { data, error } = await getMinistries();
@@ -123,13 +128,13 @@ export default function AssetsPage() {
         console.error("Error fetching ministries:", error);
         return [];
       }
-      return data || [];
+      return (data || []) as Ministry[];
     },
   });
 
   const ministryMap = useMemo(() => {
     const map = new Map<string, string>();
-    ministries?.forEach((ministry: any) => {
+    ministries?.forEach((ministry) => {
       if (ministry.id) {
         map.set(ministry.id, ministry.name);
       }
@@ -139,7 +144,7 @@ export default function AssetsPage() {
 
   // Get Finance Ministry ID (must be after ministries query)
   const financeMinistry = useMemo(() => {
-    return ministries?.find((m: any) => m.name === "Finance Ministry");
+    return ministries?.find((m) => m.name === "Finance Ministry");
   }, [ministries]);
 
   // Category abbreviation mapping
@@ -221,6 +226,10 @@ export default function AssetsPage() {
       .eq("asset_tag_number", tagNumber)
       .single();
 
+    if (error) {
+      console.error("Error validating asset tag:", error);
+    }
+
     if (data) {
       setAssetTagError(`Asset tag "${tagNumber}" already exists`);
       return false;
@@ -287,8 +296,8 @@ export default function AssetsPage() {
 
       if (error) {
         // Check for duplicate asset tag number error (PostgreSQL unique constraint violation)
-        const errorMessage = (error as any).message || "";
-        const errorCode = (error as any).code || "";
+        const errorMessage = error.message ?? "";
+        const errorCode = (error as { code?: string }).code ?? "";
         
         if (errorCode === "23505" || errorMessage.includes("duplicate key") || errorMessage.includes("asset_tag_number")) {
           throw new Error(`Asset tag "${data.asset_tag_number}" already exists. Please use a different tag number.`);
@@ -618,12 +627,12 @@ export default function AssetsPage() {
                 </TableRow>
               ))
             ) : assets && assets.length > 0 ? (
-              assets.map((asset: any) => (
-            <TableRow
-              key={asset.id}
-              className="cursor-pointer"
-              onClick={() => router.push(`/inventory/assets/${asset.id}`)}
-            >
+              assets.map((asset) => (
+                <TableRow
+                  key={asset.id}
+                  className="cursor-pointer"
+                  onClick={() => router.push(`/inventory/assets/${asset.id}`)}
+                >
                   <TableCell className="font-medium">{asset.asset_tag_number}</TableCell>
                   <TableCell className="max-w-xs truncate">
                     {asset.asset_description || "—"}

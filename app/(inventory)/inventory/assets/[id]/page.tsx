@@ -56,8 +56,8 @@ export default function AssetDetailPage() {
     remarks: "",
   });
 
-  // Fetch ministries for dropdown
-  const { data: ministries } = useQuery({
+  // Fetch ministries for dropdown (data is currently not used directly)
+  const { data: _ministries } = useQuery({
     queryKey: ["ministries"],
     queryFn: async () => {
       const { data, error } = await getMinistries();
@@ -207,6 +207,10 @@ export default function AssetDetailPage() {
       .neq("id", assetId)
       .single();
 
+    if (error) {
+      console.error("Error validating asset tag:", error);
+    }
+
     if (data) {
       setAssetTagError(`Asset tag "${tagNumber}" already exists`);
       return false;
@@ -255,8 +259,9 @@ export default function AssetDetailPage() {
         .eq("id", assetId);
 
       if (error) {
-        const errorMessage = (error as any).message || "";
-        const errorCode = (error as any).code || "";
+        const errorMessage = error.message ?? "";
+        // Some errors (like PostgrestError) include a code field
+        const errorCode = (error as { code?: string }).code ?? "";
         
         if (errorCode === "23505" || errorMessage.includes("duplicate key") || errorMessage.includes("asset_tag_number")) {
           throw new Error(`Asset tag "${data.asset_tag_number}" already exists. Please use a different tag number.`);

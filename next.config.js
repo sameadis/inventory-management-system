@@ -13,10 +13,6 @@ const nextConfig = {
       bodySizeLimit: "2mb",
     },
   },
-  devIndicators: {
-    appIsrStatus: false,
-    buildActivity: false,
-  },
 };
 
 module.exports = nextConfig;
