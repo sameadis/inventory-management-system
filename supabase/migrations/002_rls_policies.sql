@@ -39,10 +39,10 @@ returns boolean as $$
   select public.user_has_role('system_admin');
 $$ language sql stable security definer;
 
--- Check if user is finance
-create or replace function public.is_finance()
+-- Check if user is asset manager
+create or replace function public.is_asset_manager()
 returns boolean as $$
-  select public.user_has_role('finance');
+  select public.user_has_role('asset_manager');
 $$ language sql stable security definer;
 
 -- Check if user is ministry leader
@@ -103,22 +103,22 @@ create policy "Users can view ministries in their branch"
     or church_branch_id = public.get_user_branch_id()
   );
 
-create policy "Finance and system admins can create ministries"
+create policy "Asset managers and system admins can create ministries"
   on public.ministry for insert
   with check (
     public.is_system_admin()
-    or (public.is_finance() and church_branch_id = public.get_user_branch_id())
+    or (public.is_asset_manager() and church_branch_id = public.get_user_branch_id())
   );
 
-create policy "Finance and system admins can update ministries"
+create policy "Asset managers and system admins can update ministries"
   on public.ministry for update
   using (
     public.is_system_admin()
-    or (public.is_finance() and church_branch_id = public.get_user_branch_id())
+    or (public.is_asset_manager() and church_branch_id = public.get_user_branch_id())
   )
   with check (
     public.is_system_admin()
-    or (public.is_finance() and church_branch_id = public.get_user_branch_id())
+    or (public.is_asset_manager() and church_branch_id = public.get_user_branch_id())
   );
 
 create policy "Only system admins can delete ministries"
@@ -195,32 +195,32 @@ create policy "Users can view assets in their branch"
     or church_branch_id = public.get_user_branch_id()
   );
 
--- Only Finance can create assets
-create policy "Finance can create assets in their branch"
+-- Only Asset Managers can create assets
+create policy "Asset managers can create assets in their branch"
   on inventory.asset for insert
   with check (
     public.is_system_admin()
-    or (public.is_finance() and church_branch_id = public.get_user_branch_id())
+    or (public.is_asset_manager() and church_branch_id = public.get_user_branch_id())
   );
 
--- Only Finance can update assets
-create policy "Finance can update assets in their branch"
+-- Only Asset Managers can update assets
+create policy "Asset managers can update assets in their branch"
   on inventory.asset for update
   using (
     public.is_system_admin()
-    or (public.is_finance() and church_branch_id = public.get_user_branch_id())
+    or (public.is_asset_manager() and church_branch_id = public.get_user_branch_id())
   )
   with check (
     public.is_system_admin()
-    or (public.is_finance() and church_branch_id = public.get_user_branch_id())
+    or (public.is_asset_manager() and church_branch_id = public.get_user_branch_id())
   );
 
--- Only Finance can delete assets (soft delete via status recommended)
-create policy "Finance can delete assets in their branch"
+-- Only Asset Managers can delete assets (soft delete via status recommended)
+create policy "Asset managers can delete assets in their branch"
   on inventory.asset for delete
   using (
     public.is_system_admin()
-    or (public.is_finance() and church_branch_id = public.get_user_branch_id())
+    or (public.is_asset_manager() and church_branch_id = public.get_user_branch_id())
   );
 
 -- VERIFICATION_HISTORY policies
@@ -236,12 +236,12 @@ create policy "Users can view verification history in their branch"
     )
   );
 
--- Finance and Ministry Leaders can create verification records
-create policy "Finance and Ministry Leaders can create verifications"
+-- Asset Managers and Ministry Leaders can create verification records
+create policy "Asset managers and Ministry Leaders can create verifications"
   on inventory.verification_history for insert
   with check (
     public.is_system_admin()
-    or public.is_finance()
+    or public.is_asset_manager()
     or public.is_ministry_leader()
   );
 
@@ -258,21 +258,21 @@ create policy "Users can view transfer history in their branch"
     )
   );
 
--- Finance and Ministry Leaders can create transfer requests
-create policy "Finance and Ministry Leaders can request transfers"
+-- Asset Managers and Ministry Leaders can create transfer requests
+create policy "Asset managers and Ministry Leaders can request transfers"
   on inventory.transfer_history for insert
   with check (
     public.is_system_admin()
-    or public.is_finance()
+    or public.is_asset_manager()
     or public.is_ministry_leader()
   );
 
--- Only Finance can approve transfers (update approved_by and transfer_date)
-create policy "Finance can approve transfers"
+-- Only Asset Managers can approve transfers (update approved_by and transfer_date)
+create policy "Asset managers can approve transfers"
   on inventory.transfer_history for update
   using (
     public.is_system_admin()
-    or (public.is_finance() and exists (
+    or (public.is_asset_manager() and exists (
       select 1 from inventory.asset a
       where a.id = asset_id
       and a.church_branch_id = public.get_user_branch_id()
@@ -280,7 +280,7 @@ create policy "Finance can approve transfers"
   )
   with check (
     public.is_system_admin()
-    or (public.is_finance() and exists (
+    or (public.is_asset_manager() and exists (
       select 1 from inventory.asset a
       where a.id = asset_id
       and a.church_branch_id = public.get_user_branch_id()
@@ -300,21 +300,21 @@ create policy "Users can view disposal history in their branch"
     )
   );
 
--- Finance and Ministry Leaders can create disposal requests
-create policy "Finance and Ministry Leaders can request disposals"
+-- Asset Managers and Ministry Leaders can create disposal requests
+create policy "Asset managers and Ministry Leaders can request disposals"
   on inventory.disposal_history for insert
   with check (
     public.is_system_admin()
-    or public.is_finance()
+    or public.is_asset_manager()
     or public.is_ministry_leader()
   );
 
--- Only Finance can approve disposals
-create policy "Finance can approve disposals"
+-- Only Asset Managers can approve disposals
+create policy "Asset managers can approve disposals"
   on inventory.disposal_history for update
   using (
     public.is_system_admin()
-    or (public.is_finance() and exists (
+    or (public.is_asset_manager() and exists (
       select 1 from inventory.asset a
       where a.id = asset_id
       and a.church_branch_id = public.get_user_branch_id()
@@ -322,7 +322,7 @@ create policy "Finance can approve disposals"
   )
   with check (
     public.is_system_admin()
-    or (public.is_finance() and exists (
+    or (public.is_asset_manager() and exists (
       select 1 from inventory.asset a
       where a.id = asset_id
       and a.church_branch_id = public.get_user_branch_id()
@@ -349,7 +349,7 @@ grant insert, update, delete on all tables in schema inventory to authenticated;
 grant execute on function public.get_user_branch_id() to authenticated;
 grant execute on function public.user_has_role(text) to authenticated;
 grant execute on function public.is_system_admin() to authenticated;
-grant execute on function public.is_finance() to authenticated;
+grant execute on function public.is_asset_manager() to authenticated;
 grant execute on function public.is_ministry_leader() to authenticated;
 
 -- =====================================================
@@ -359,6 +359,6 @@ grant execute on function public.is_ministry_leader() to authenticated;
 comment on function public.get_user_branch_id is 'Returns the church_branch_id for the current authenticated user';
 comment on function public.user_has_role is 'Checks if the current user has the specified role';
 comment on function public.is_system_admin is 'Returns true if current user is a system admin';
-comment on function public.is_finance is 'Returns true if current user has finance role';
+comment on function public.is_asset_manager is 'Returns true if current user has asset_manager role';
 comment on function public.is_ministry_leader is 'Returns true if current user is a ministry leader';
 

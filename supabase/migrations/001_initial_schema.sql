@@ -46,10 +46,10 @@ create table if not exists public.ministry (
   updated_at timestamptz default now()
 );
 
--- Roles for RBAC (finance, ministry_leader, system_admin)
+-- Roles for RBAC (asset_manager, ministry_leader, system_admin)
 create table if not exists public.roles (
   id uuid primary key default gen_random_uuid(),
-  name text unique not null check (name in ('finance', 'ministry_leader', 'system_admin')),
+  name text unique not null check (name in ('asset_manager', 'ministry_leader', 'system_admin')),
   description text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()

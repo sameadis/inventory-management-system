@@ -1,136 +1,154 @@
-import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+"use client";
 
-export default async function InventoryPage() {
-  const supabase = await createClient();
+import { useQuery } from "@tanstack/react-query";
+import { getAssets, getVerifications, getPendingTransfers, getPendingDisposals } from "@/lib/supabase/queries";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Package, CheckCircle, ArrowRightLeft, Trash2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
-  // Get user profile to show branch info
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export default function DashboardPage() {
+  // Fetch summary stats using schema-specific queries
+  const { data: assets, isLoading: loadingAssets } = useQuery({
+    queryKey: ["assets"],
+    queryFn: async () => {
+      const { data, error } = await getAssets();
+      if (error) console.error("Error fetching assets:", error);
+      return data || [];
+    },
+  });
 
-  let userProfile = null;
-  let churchBranch = null;
+  const { data: verifications, isLoading: loadingVerifications } = useQuery({
+    queryKey: ["verifications"],
+    queryFn: async () => {
+      const { data, error } = await getVerifications(5);
+      if (error) console.error("Error fetching verifications:", error);
+      return data || [];
+    },
+  });
 
-  if (user) {
-    const { data: profile } = await supabase
-      .from("user_profile")
-      .select("*, church_branch:church_branch_id(*)")
-      .eq("id", user.id)
-      .single();
+  const { data: transfers, isLoading: loadingTransfers } = useQuery({
+    queryKey: ["transfers"],
+    queryFn: async () => {
+      const { data, error } = await getPendingTransfers();
+      if (error) console.error("Error fetching transfers:", error);
+      return data || [];
+    },
+  });
 
-    userProfile = profile;
-    churchBranch = profile?.church_branch;
-  }
+  const { data: disposals, isLoading: loadingDisposals } = useQuery({
+    queryKey: ["disposals"],
+    queryFn: async () => {
+      const { data, error } = await getPendingDisposals();
+      if (error) console.error("Error fetching disposals:", error);
+      return data || [];
+    },
+  });
+
+  const stats = [
+    {
+      title: "Total Assets",
+      value: assets?.length || 0,
+      icon: Package,
+      color: "text-blue-600",
+      bgColor: "bg-blue-100",
+      loading: loadingAssets,
+    },
+    {
+      title: "Verifications",
+      value: verifications?.length || 0,
+      icon: CheckCircle,
+      color: "text-green-600",
+      bgColor: "bg-green-100",
+      loading: loadingVerifications,
+    },
+    {
+      title: "Pending Transfers",
+      value: transfers?.length || 0,
+      icon: ArrowRightLeft,
+      color: "text-orange-600",
+      bgColor: "bg-orange-100",
+      loading: loadingTransfers,
+    },
+    {
+      title: "Pending Disposals",
+      value: disposals?.length || 0,
+      icon: Trash2,
+      color: "text-red-600",
+      bgColor: "bg-red-100",
+      loading: loadingDisposals,
+    },
+  ];
 
   return (
-    <div className="space-y-8">
-      {/* Welcome Section */}
+    <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold mb-2">Welcome to Inventory Management</h2>
-        {churchBranch && (
-          <p className="text-muted-foreground">
-            Managing assets for <span className="font-medium">{churchBranch.name}</span>
-            {churchBranch.location && ` - ${churchBranch.location}`}
-          </p>
-        )}
+        <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
+        <p className="text-slate-600 mt-1">Overview of your asset inventory</p>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <div className="border rounded-lg p-6">
-          <h3 className="text-sm font-medium text-muted-foreground">Total Assets</h3>
-          <p className="text-3xl font-bold mt-2">-</p>
-          <p className="text-xs text-muted-foreground mt-1">Coming soon</p>
-        </div>
-        <div className="border rounded-lg p-6">
-          <h3 className="text-sm font-medium text-muted-foreground">Active</h3>
-          <p className="text-3xl font-bold mt-2 text-green-600">-</p>
-          <p className="text-xs text-muted-foreground mt-1">In use</p>
-        </div>
-        <div className="border rounded-lg p-6">
-          <h3 className="text-sm font-medium text-muted-foreground">Pending Verification</h3>
-          <p className="text-3xl font-bold mt-2 text-yellow-600">-</p>
-          <p className="text-xs text-muted-foreground mt-1">Needs review</p>
-        </div>
-        <div className="border rounded-lg p-6">
-          <h3 className="text-sm font-medium text-muted-foreground">Total Value</h3>
-          <p className="text-3xl font-bold mt-2">-</p>
-          <p className="text-xs text-muted-foreground mt-1">Acquisition cost</p>
-        </div>
-      </div>
-
-      {/* Main Actions */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Link
-          href="/inventory/assets"
-          className="group border rounded-lg p-6 hover:border-primary transition-colors"
-        >
-          <h3 className="text-xl font-semibold mb-2 group-hover:text-primary">Assets</h3>
-          <p className="text-sm text-muted-foreground">
-            View and manage all fixed assets in your church branch
-          </p>
-        </Link>
-
-        <Link
-          href="/inventory/verification"
-          className="group border rounded-lg p-6 hover:border-primary transition-colors"
-        >
-          <h3 className="text-xl font-semibold mb-2 group-hover:text-primary">Verification</h3>
-          <p className="text-sm text-muted-foreground">
-            Track asset verification history and schedule new verifications
-          </p>
-        </Link>
-
-        <Link
-          href="/inventory/transfers"
-          className="group border rounded-lg p-6 hover:border-primary transition-colors"
-        >
-          <h3 className="text-xl font-semibold mb-2 group-hover:text-primary">Transfers</h3>
-          <p className="text-sm text-muted-foreground">
-            Manage asset transfers between ministries
-          </p>
-        </Link>
-
-        <Link
-          href="/inventory/disposals"
-          className="group border rounded-lg p-6 hover:border-primary transition-colors"
-        >
-          <h3 className="text-xl font-semibold mb-2 group-hover:text-primary">Disposals</h3>
-          <p className="text-sm text-muted-foreground">
-            Handle asset disposal requests and approvals
-          </p>
-        </Link>
-
-        <Link
-          href="/inventory/reports"
-          className="group border rounded-lg p-6 hover:border-primary transition-colors"
-        >
-          <h3 className="text-xl font-semibold mb-2 group-hover:text-primary">Reports</h3>
-          <p className="text-sm text-muted-foreground">
-            Generate inventory reports and analytics
-          </p>
-        </Link>
-
-        <Link
-          href="/inventory/settings"
-          className="group border rounded-lg p-6 hover:border-primary transition-colors"
-        >
-          <h3 className="text-xl font-semibold mb-2 group-hover:text-primary">Settings</h3>
-          <p className="text-sm text-muted-foreground">
-            Manage branches, ministries, and user permissions
-          </p>
-        </Link>
+      {/* Stats Grid */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat) => (
+          <Card key={stat.title}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+              <div className={`${stat.bgColor} p-2 rounded-lg`}>
+                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {stat.loading ? (
+                <Skeleton className="h-8 w-20" />
+              ) : (
+                <div className="text-2xl font-bold">{stat.value}</div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Recent Activity */}
-      <div className="border rounded-lg p-6">
-        <h3 className="text-xl font-semibold mb-4">Recent Activity</h3>
-        <p className="text-sm text-muted-foreground">
-          No recent activity to display. Asset activities will appear here once you start managing
-          your inventory.
-        </p>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loadingVerifications ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {verifications?.slice(0, 5).map((verification: any) => (
+                <div
+                  key={verification.id}
+                  className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">
+                        Verification completed
+                      </p>
+                      <p className="text-xs text-slate-600">
+                        {verification.asset?.asset_tag_number || "Unknown"} - {verification.condition}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-xs text-slate-500">
+                    {new Date(verification.verification_date).toLocaleDateString()}
+                  </span>
+                </div>
+              ))}
+              {(!verifications || verifications.length === 0) && (
+                <p className="text-sm text-slate-500 text-center py-8">No recent activity</p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
