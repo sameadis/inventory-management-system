@@ -29,7 +29,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { getMinistries } from "@/lib/supabase/queries";
 
 export default function AssetDetailPage() {
   const { isAssetManager } = useAuth();
@@ -54,19 +53,6 @@ export default function AssetDetailPage() {
     physical_location: "",
     current_condition: "",
     remarks: "",
-  });
-
-  // Fetch ministries for dropdown (data is currently not used directly)
-  const { data: _ministries } = useQuery({
-    queryKey: ["ministries"],
-    queryFn: async () => {
-      const { data, error } = await getMinistries();
-      if (error) {
-        console.error("Error fetching ministries:", error);
-        return [];
-      }
-      return data || [];
-    },
   });
 
   // Fetch all assets to get categories and locations

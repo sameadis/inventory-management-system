@@ -1,13 +1,13 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { 
-  getAssets, 
-  getVerifications, 
-  getPendingTransfers, 
+import {
+  getAssets,
+  getVerifications,
+  getPendingTransfers,
   getPendingDisposals,
   getRecentTransfers,
-  getRecentDisposals
+  getRecentDisposals,
 } from "@/lib/supabase/queries";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, CheckCircle, ArrowRightLeft, Trash2 } from "lucide-react";
@@ -115,25 +115,21 @@ export default function DashboardPage() {
     verifications?.forEach((v: VerificationRow) => {
       activities.push({
         id: v.id,
-        type: 'verification',
-        date: v.verification_date || v.created_at,
-        assetTag: v.asset?.asset_tag_number || 'Unknown',
+        type: "verification",
+        date: (v.verification_date ?? v.created_at ?? "") as string,
+        assetTag: v.asset?.asset_tag_number || "Unknown",
         description: `Condition: ${v.condition}`,
       });
     });
 
     // Add transfers
     recentTransfers?.forEach((t: TransferRow) => {
-      const status = t.transfer_date 
-        ? 'Completed' 
-        : t.approved_by 
-          ? 'Approved' 
-          : 'Pending';
+      const status = t.transfer_date ? "Completed" : t.approved_by ? "Approved" : "Pending";
       activities.push({
         id: t.id,
-        type: 'transfer',
-        date: t.transfer_date || t.created_at,
-        assetTag: t.asset?.asset_tag_number || 'Unknown',
+        type: "transfer",
+        date: (t.transfer_date ?? t.created_at ?? "") as string,
+        assetTag: t.asset?.asset_tag_number || "Unknown",
         description: `Transfer ${status}`,
       });
     });
@@ -141,46 +137,46 @@ export default function DashboardPage() {
     // Add disposals
     recentDisposals?.forEach((d: DisposalRow) => {
       const status = d.rejected_by
-        ? 'Rejected'
+        ? "Rejected"
         : d.approved_by
-          ? 'Approved'
+          ? "Approved"
           : d.reviewed_by
-            ? 'Under Review'
-            : 'Pending';
+            ? "Under Review"
+            : "Pending";
       activities.push({
         id: d.id,
-        type: 'disposal',
-        date: d.disposal_date || d.created_at,
-        assetTag: d.asset?.asset_tag_number || 'Unknown',
+        type: "disposal",
+        date: (d.disposal_date ?? d.created_at ?? "") as string,
+        assetTag: d.asset?.asset_tag_number || "Unknown",
         description: `${d.disposal_method} - ${status}`,
       });
     });
 
     // Sort by date (latest first)
-    return activities.sort((a, b) => 
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    ).slice(0, 10);
+    return activities
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 10);
   }, [verifications, recentTransfers, recentDisposals]);
 
   const getActivityIcon = (type: ActivityType) => {
     switch (type) {
-      case 'verification':
-        return { Icon: CheckCircle, color: 'text-green-600' };
-      case 'transfer':
-        return { Icon: ArrowRightLeft, color: 'text-orange-600' };
-      case 'disposal':
-        return { Icon: Trash2, color: 'text-red-600' };
+      case "verification":
+        return { Icon: CheckCircle, color: "text-green-600" };
+      case "transfer":
+        return { Icon: ArrowRightLeft, color: "text-orange-600" };
+      case "disposal":
+        return { Icon: Trash2, color: "text-red-600" };
     }
   };
 
   const getActivityLabel = (type: ActivityType) => {
     switch (type) {
-      case 'verification':
-        return 'Verification';
-      case 'transfer':
-        return 'Transfer';
-      case 'disposal':
-        return 'Disposal';
+      case "verification":
+        return "Verification";
+      case "transfer":
+        return "Transfer";
+      case "disposal":
+        return "Disposal";
     }
   };
 
@@ -253,7 +249,7 @@ export default function DashboardPage() {
           <CardTitle>Recent Activity</CardTitle>
         </CardHeader>
         <CardContent>
-          {(loadingVerifications || loadingRecentTransfers || loadingRecentDisposals) ? (
+          {loadingVerifications || loadingRecentTransfers || loadingRecentDisposals ? (
             <div className="space-y-3">
               {[1, 2, 3, 4, 5].map((i) => (
                 <Skeleton key={i} className="h-12 w-full" />
@@ -264,7 +260,7 @@ export default function DashboardPage() {
               {recentActivities.map((activity) => {
                 const { Icon, color } = getActivityIcon(activity.type);
                 const label = getActivityLabel(activity.type);
-                
+
                 return (
                   <div
                     key={`${activity.type}-${activity.id}`}
@@ -273,9 +269,7 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-3">
                       <Icon className={`h-5 w-5 ${color}`} />
                       <div>
-                        <p className="text-sm font-medium text-slate-900">
-                          {label}
-                        </p>
+                        <p className="text-sm font-medium text-slate-900">{label}</p>
                         <p className="text-xs text-slate-600">
                           {activity.assetTag} - {activity.description}
                         </p>
@@ -297,4 +291,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
