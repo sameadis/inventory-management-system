@@ -3,21 +3,20 @@ const nextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: '**.supabase.co',
+        protocol: "https",
+        hostname: "**.supabase.co",
       },
     ],
   },
   experimental: {
     serverActions: {
-      bodySizeLimit: '2mb',
+      bodySizeLimit: "2mb",
     },
   },
   devIndicators: {
+    appIsrStatus: false,
     buildActivity: false,
-    buildActivityPosition: 'bottom-right',
   },
-}
+};
 
-module.exports = nextConfig
-
+module.exports = nextConfig;

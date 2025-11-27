@@ -8,6 +8,7 @@ import { Plus, Check } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -362,6 +363,9 @@ export default function TransfersPage() {
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Request Asset Transfer</DialogTitle>
+                <DialogDescription>
+                  Create a request to transfer an asset between ministries.
+                </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">

@@ -1,6 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,12 +11,88 @@ import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useParams } from "next/navigation";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { getMinistries } from "@/lib/supabase/queries";
 
 export default function AssetDetailPage() {
   const { isAssetManager } = useAuth();
   const supabase = createClient();
   const params = useParams<{ id: string }>();
   const assetId = Array.isArray(params?.id) ? params?.id[0] : params?.id;
+  const queryClient = useQueryClient();
+  
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [assetTagError, setAssetTagError] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    asset_tag_number: "",
+    asset_description: "",
+    category: "",
+    model_or_serial_number: "",
+    quantity: "1",
+    unit_of_measure: "ea",
+    acquisition_date: "",
+    acquisition_cost: "",
+    estimated_useful_life_years: "",
+    depreciation_method: "",
+    physical_location: "",
+    current_condition: "",
+    remarks: "",
+  });
+
+  // Fetch ministries for dropdown
+  const { data: ministries } = useQuery({
+    queryKey: ["ministries"],
+    queryFn: async () => {
+      const { data, error } = await getMinistries();
+      if (error) {
+        console.error("Error fetching ministries:", error);
+        return [];
+      }
+      return data || [];
+    },
+  });
+
+  // Fetch all assets to get categories and locations
+  const { data: allAssets } = useQuery({
+    queryKey: ["all-assets-for-edit"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .schema("inventory")
+        .from("asset")
+        .select("category, physical_location");
+      
+      if (error) {
+        console.error("Error fetching assets:", error);
+        return [];
+      }
+      return data || [];
+    },
+  });
+
+  const availableCategories = Array.from(
+    new Set(allAssets?.map((a) => a.category).filter(Boolean))
+  ).sort();
+
+  const availableLocations = Array.from(
+    new Set(allAssets?.map((a) => a.physical_location).filter(Boolean))
+  ).sort();
 
   const { data: asset, isLoading } = useQuery({
     queryKey: ["asset", assetId],
@@ -38,8 +115,9 @@ export default function AssetDetailPage() {
       let ministryName: string | null = null;
       let churchBranchName: string | null = null;
       let preparedByName: string | null = null;
+      let updatedByName: string | null = null;
 
-      const [ministryResult, branchResult, preparedByResult] = await Promise.all([
+      const [ministryResult, branchResult, preparedByResult, updatedByResult] = await Promise.all([
         data?.ministry_assigned
           ? supabase
               .from("ministry")
@@ -61,20 +139,160 @@ export default function AssetDetailPage() {
               .eq("id", data.prepared_by)
               .maybeSingle()
           : Promise.resolve({ data: null }),
+        data?.updated_by
+          ? supabase
+              .from("user_profile")
+              .select("full_name")
+              .eq("id", data.updated_by)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
       ]);
 
       ministryName = ministryResult?.data?.name ?? null;
       churchBranchName = branchResult?.data?.name ?? null;
       preparedByName = preparedByResult?.data?.full_name ?? null;
+      updatedByName = updatedByResult?.data?.full_name ?? null;
 
       return {
         ...data,
         ministry_name: ministryName,
         church_branch_name: churchBranchName,
         prepared_by_name: preparedByName,
+        updated_by_name: updatedByName,
       };
     },
   });
+
+  // Populate form when asset loads
+  useEffect(() => {
+    if (asset && editDialogOpen) {
+      setFormData({
+        asset_tag_number: asset.asset_tag_number || "",
+        asset_description: asset.asset_description || "",
+        category: asset.category || "",
+        model_or_serial_number: asset.model_or_serial_number || "",
+        quantity: String(asset.quantity || 1),
+        unit_of_measure: asset.unit_of_measure || "ea",
+        acquisition_date: asset.acquisition_date || "",
+        acquisition_cost: String(asset.acquisition_cost || ""),
+        estimated_useful_life_years: asset.estimated_useful_life_years ? String(asset.estimated_useful_life_years) : "",
+        depreciation_method: asset.depreciation_method || "",
+        physical_location: asset.physical_location || "",
+        current_condition: asset.current_condition || "",
+        remarks: asset.remarks || "",
+      });
+      setAssetTagError(null);
+    }
+  }, [asset, editDialogOpen]);
+
+  // Validate asset tag on blur (excluding current asset)
+  const validateAssetTag = async (tagNumber: string) => {
+    if (!tagNumber) {
+      setAssetTagError("Asset tag is required");
+      return false;
+    }
+
+    // Skip validation if tag hasn't changed
+    if (tagNumber === asset?.asset_tag_number) {
+      setAssetTagError(null);
+      return true;
+    }
+
+    // Check if tag already exists (excluding current asset)
+    const { data, error } = await supabase
+      .schema("inventory")
+      .from("asset")
+      .select("id")
+      .eq("asset_tag_number", tagNumber)
+      .neq("id", assetId)
+      .single();
+
+    if (data) {
+      setAssetTagError(`Asset tag "${tagNumber}" already exists`);
+      return false;
+    }
+
+    setAssetTagError(null);
+    return true;
+  };
+
+  const handleAssetTagBlur = () => {
+    if (formData.asset_tag_number) {
+      validateAssetTag(formData.asset_tag_number);
+    }
+  };
+
+  // Update asset mutation
+  const updateAssetMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      if (!assetId) throw new Error("Asset ID is required");
+
+      // Check if asset is disposed
+      if (asset?.asset_status === "disposed") {
+        throw new Error("Cannot edit disposed asset. Disposed assets are read-only.");
+      }
+
+      const { error } = await supabase
+        .schema("inventory")
+        .from("asset")
+        .update({
+          asset_tag_number: data.asset_tag_number,
+          asset_description: data.asset_description,
+          category: data.category,
+          model_or_serial_number: data.model_or_serial_number || null,
+          quantity: parseInt(data.quantity),
+          unit_of_measure: data.unit_of_measure,
+          acquisition_date: data.acquisition_date,
+          acquisition_cost: parseFloat(data.acquisition_cost),
+          estimated_useful_life_years: data.estimated_useful_life_years
+            ? parseInt(data.estimated_useful_life_years)
+            : null,
+          depreciation_method: data.depreciation_method || null,
+          physical_location: data.physical_location,
+          current_condition: data.current_condition,
+          remarks: data.remarks || null,
+        })
+        .eq("id", assetId);
+
+      if (error) {
+        const errorMessage = (error as any).message || "";
+        const errorCode = (error as any).code || "";
+        
+        if (errorCode === "23505" || errorMessage.includes("duplicate key") || errorMessage.includes("asset_tag_number")) {
+          throw new Error(`Asset tag "${data.asset_tag_number}" already exists. Please use a different tag number.`);
+        }
+        
+        // Check for disposed asset constraint
+        if (errorMessage.includes("Cannot update disposed asset")) {
+          throw new Error("Cannot edit disposed asset. Disposed assets are read-only.");
+        }
+        
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["asset", assetId] });
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      setEditDialogOpen(false);
+      setAssetTagError(null);
+    },
+    onError: (error: Error) => {
+      console.error("Asset update failed:", error.message);
+      if (error.message.includes("already exists")) {
+        setAssetTagError(error.message);
+      } else {
+        alert(error.message);
+      }
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (assetTagError) {
+      return; // Don't submit if there's a validation error
+    }
+    updateAssetMutation.mutate(formData);
+  };
 
   if (isLoading) {
     return (
@@ -108,8 +326,221 @@ export default function AssetDetailPage() {
             <p className="text-slate-600 mt-1">{asset.asset_description || "No description"}</p>
           </div>
         </div>
-        {isAssetManager && (
-          <Button disabled>
+        {isAssetManager && asset.asset_status !== "disposed" && (
+          <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edit Asset</DialogTitle>
+                <DialogDescription>
+                  Update the asset information below.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Category *</Label>
+                    <Input
+                      id="category"
+                      placeholder="Select or type category"
+                      value={formData.category}
+                      onChange={(e) =>
+                        setFormData({ ...formData, category: e.target.value })
+                      }
+                      list="category-suggestions-edit"
+                      required
+                    />
+                    <datalist id="category-suggestions-edit">
+                      {availableCategories.map((category) => (
+                        <option key={category} value={category} />
+                      ))}
+                    </datalist>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="asset_tag_number">Asset Tag Number *</Label>
+                    <Input
+                      id="asset_tag_number"
+                      placeholder="Asset tag"
+                      value={formData.asset_tag_number}
+                      onChange={(e) => {
+                        setFormData({ ...formData, asset_tag_number: e.target.value });
+                        setAssetTagError(null);
+                      }}
+                      onBlur={handleAssetTagBlur}
+                      className={assetTagError ? "border-red-500" : ""}
+                      required
+                    />
+                    {assetTagError && (
+                      <p className="text-xs text-red-600">{assetTagError}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="asset_description">Description *</Label>
+                  <Textarea
+                    id="asset_description"
+                    placeholder="Describe the asset..."
+                    value={formData.asset_description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, asset_description: e.target.value })
+                    }
+                    required
+                    rows={2}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="model_or_serial_number">Model/Serial Number</Label>
+                    <Input
+                      id="model_or_serial_number"
+                      placeholder="Optional"
+                      value={formData.model_or_serial_number}
+                      onChange={(e) =>
+                        setFormData({ ...formData, model_or_serial_number: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="current_condition">Condition *</Label>
+                    <Select
+                      value={formData.current_condition}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, current_condition: value })
+                      }
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select condition" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="New">New</SelectItem>
+                        <SelectItem value="Good">Good</SelectItem>
+                        <SelectItem value="Fair">Fair</SelectItem>
+                        <SelectItem value="Poor">Poor</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="quantity">Quantity *</Label>
+                    <Input
+                      id="quantity"
+                      type="number"
+                      min="1"
+                      value={formData.quantity}
+                      onChange={(e) =>
+                        setFormData({ ...formData, quantity: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="unit_of_measure">Unit *</Label>
+                    <Input
+                      id="unit_of_measure"
+                      placeholder="e.g., ea, pcs"
+                      value={formData.unit_of_measure}
+                      onChange={(e) =>
+                        setFormData({ ...formData, unit_of_measure: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="acquisition_date">Acquisition Date *</Label>
+                    <Input
+                      id="acquisition_date"
+                      type="date"
+                      value={formData.acquisition_date}
+                      onChange={(e) =>
+                        setFormData({ ...formData, acquisition_date: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="acquisition_cost">Acquisition Cost *</Label>
+                    <Input
+                      id="acquisition_cost"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={formData.acquisition_cost}
+                      onChange={(e) =>
+                        setFormData({ ...formData, acquisition_cost: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="physical_location">Physical Location *</Label>
+                  <Input
+                    id="physical_location"
+                    placeholder="Select or type location"
+                    value={formData.physical_location}
+                    onChange={(e) =>
+                      setFormData({ ...formData, physical_location: e.target.value })
+                    }
+                    list="location-suggestions-edit"
+                    required
+                  />
+                  <datalist id="location-suggestions-edit">
+                    {availableLocations.map((location) => (
+                      <option key={location} value={location} />
+                    ))}
+                  </datalist>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="remarks">Remarks</Label>
+                  <Textarea
+                    id="remarks"
+                    placeholder="Additional notes..."
+                    value={formData.remarks}
+                    onChange={(e) =>
+                      setFormData({ ...formData, remarks: e.target.value })
+                    }
+                    rows={2}
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <Button type="submit" disabled={updateAssetMutation.isPending || !!assetTagError}>
+                    {updateAssetMutation.isPending ? "Updating..." : "Update Asset"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setEditDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
+        {isAssetManager && asset.asset_status === "disposed" && (
+          <Button disabled title="Disposed assets cannot be edited">
             <Edit className="h-4 w-4 mr-2" />
             Edit
           </Button>
@@ -252,31 +683,6 @@ export default function AssetDetailPage() {
         </Card>
       )}
 
-      {/* Workflow Info */}
-      {asset.date_of_entry && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Workflow Information</CardTitle>
-          </CardHeader>
-          <CardContent className="grid md:grid-cols-2 gap-6">
-            <div>
-              <p className="text-sm text-slate-600">Date of Entry</p>
-              <p className="font-medium">
-                {new Date(asset.date_of_entry).toLocaleDateString()}
-              </p>
-            </div>
-            {(asset.prepared_by_name || asset.prepared_by) && (
-              <div>
-                <p className="text-sm text-slate-600">Prepared By</p>
-                <p className="font-medium">
-                  {asset.prepared_by_name || asset.prepared_by || "—"}
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
       {/* Remarks */}
       {asset.remarks && (
         <Card>
@@ -289,23 +695,42 @@ export default function AssetDetailPage() {
         </Card>
       )}
 
-      {/* Timestamps */}
+      {/* Audit Trail - Merged Workflow and Record Information */}
       <Card>
         <CardHeader>
-          <CardTitle>Record Information</CardTitle>
+          <CardTitle>Audit Trail</CardTitle>
         </CardHeader>
-        <CardContent className="grid md:grid-cols-2 gap-6">
-          <div>
-            <p className="text-sm text-slate-600">Created</p>
-            <p className="font-medium">
-              {new Date(asset.created_at).toLocaleString()}
-            </p>
+        <CardContent className="space-y-6">
+          {/* Created Info */}
+          <div className="grid md:grid-cols-2 gap-6 pb-4 border-b border-slate-200">
+            <div>
+              <p className="text-sm text-slate-600">Created On</p>
+              <p className="font-medium">
+                {new Date(asset.created_at).toLocaleString()}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">Prepared By</p>
+              <p className="font-medium">
+                {asset.prepared_by_name || "—"}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm text-slate-600">Last Updated</p>
-            <p className="font-medium">
-              {new Date(asset.updated_at).toLocaleString()}
-            </p>
+
+          {/* Updated Info */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <p className="text-sm text-slate-600">Last Updated</p>
+              <p className="font-medium">
+                {new Date(asset.updated_at).toLocaleString()}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-600">Updated By</p>
+              <p className="font-medium">
+                {asset.updated_by_name || "—"}
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>

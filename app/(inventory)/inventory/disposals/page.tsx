@@ -8,6 +8,7 @@ import { Plus, Check, X, Eye } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -378,6 +379,9 @@ export default function DisposalsPage() {
             <DialogContent className="max-w-lg">
               <DialogHeader>
                 <DialogTitle>Request Asset Disposal</DialogTitle>
+                <DialogDescription>
+                  Create a request to dispose of an asset.
+                </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">

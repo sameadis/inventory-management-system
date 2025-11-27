@@ -58,3 +58,12 @@
   }
 }
 
+/* Hide Next.js dev indicators */
+#__next-build-watcher,
+[data-nextjs-toast-wrapper],
+[data-nextjs-dialog-overlay],
+button[data-nextjs-dev-tools-button],
+nextjs-portal {
+  display: none !important;
+}
+

@@ -8,6 +8,7 @@ import { Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -214,6 +215,9 @@ export default function VerificationPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Record Asset Verification</DialogTitle>
+              <DialogDescription>
+                Verify the condition and location of an asset.
+              </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
