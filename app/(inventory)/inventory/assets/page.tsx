@@ -1,14 +1,47 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getAssets } from "@/lib/supabase/queries";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Plus, Search } from "lucide-react";
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/contexts/AuthContext";
+import { getMinistries } from "@/lib/supabase/queries";
 
 export default function AssetsPage() {
+  const { isAssetManager } = useAuth();
+  const [searchTerm, setSearchTerm] = useState("");
+  const supabase = createClient();
+
   const { data: assets, isLoading } = useQuery({
-    queryKey: ["assets"],
+    queryKey: ["assets", searchTerm],
     queryFn: async () => {
-      const { data, error } = await getAssets();
+      let query = supabase
+        .schema("inventory")
+        .from("asset")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (searchTerm) {
+        query = query.or(
+          `asset_tag_number.ilike.%${searchTerm}%,asset_description.ilike.%${searchTerm}%,category.ilike.%${searchTerm}%`
+        );
+      }
+
+      const { data, error } = await query;
+
       if (error) {
         console.error("Error fetching assets:", error);
         return [];
@@ -17,96 +50,146 @@ export default function AssetsPage() {
     },
   });
 
+  const { data: ministries } = useQuery({
+    queryKey: ["ministries"],
+    queryFn: async () => {
+      const { data, error } = await getMinistries();
+      if (error) {
+        console.error("Error fetching ministries:", error);
+        return [];
+      }
+      return data || [];
+    },
+  });
+
+  const ministryMap = useMemo(() => {
+    const map = new Map<string, string>();
+    ministries?.forEach((ministry: any) => {
+      if (ministry.id) {
+        map.set(ministry.id, ministry.name);
+      }
+    });
+    return map;
+  }, [ministries]);
+
+  const getStatusBadge = (status: string) => {
+    const colors: Record<string, string> = {
+      active: "bg-green-100 text-green-800",
+      disposed: "bg-gray-100 text-gray-800",
+      missing: "bg-red-100 text-red-800",
+    };
+    return (
+      <Badge variant="outline" className={colors[status] || "bg-slate-100 text-slate-800"}>
+        {status}
+      </Badge>
+    );
+  };
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold">Assets</h2>
-          <p className="text-muted-foreground">Manage all fixed assets in your church branch</p>
+          <h1 className="text-3xl font-bold text-slate-900">Assets</h1>
+          <p className="text-slate-600 mt-1">Manage your fixed asset inventory</p>
         </div>
-        <button className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90">
-          Add New Asset
-        </button>
+        {isAssetManager && (
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Asset
+          </Button>
+        )}
       </div>
 
-      {isLoading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-20 w-full" />
-          ))}
-        </div>
-      ) : assets && assets.length > 0 ? (
-        <div className="border rounded-lg overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-slate-50 border-b">
-              <tr>
-                <th className="text-left p-4 font-medium text-sm">Asset Tag</th>
-                <th className="text-left p-4 font-medium text-sm">Description</th>
-                <th className="text-left p-4 font-medium text-sm">Category</th>
-                <th className="text-left p-4 font-medium text-sm">Condition</th>
-                <th className="text-left p-4 font-medium text-sm">Status</th>
-                <th className="text-left p-4 font-medium text-sm">Quantity</th>
-                <th className="text-right p-4 font-medium text-sm">Cost</th>
-              </tr>
-            </thead>
-            <tbody>
-              {assets.map((asset: any) => (
-                <tr key={asset.id} className="border-b hover:bg-slate-50">
-                  <td className="p-4 font-medium">{asset.asset_tag_number}</td>
-                  <td className="p-4">{asset.asset_description}</td>
-                  <td className="p-4">{asset.category}</td>
-                  <td className="p-4">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs ${
-                        asset.current_condition === "New"
-                          ? "bg-blue-100 text-blue-800"
-                          : asset.current_condition === "Good"
-                          ? "bg-green-100 text-green-800"
-                          : asset.current_condition === "Fair"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {asset.current_condition}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs ${
-                        asset.asset_status === "active"
-                          ? "bg-green-100 text-green-800"
-                          : asset.asset_status === "disposed"
-                          ? "bg-gray-100 text-gray-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {asset.asset_status}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    {asset.quantity} {asset.unit_of_measure}
-                  </td>
-                  <td className="p-4 text-right font-medium">
-                    ${asset.acquisition_cost.toFixed(2)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <div className="border rounded-lg p-8 text-center">
-          <p className="text-muted-foreground">
-            No assets found. Click "Add New Asset" to create your first asset record.
-          </p>
-        </div>
-      )}
+      {/* Search */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+        <Input
+          placeholder="Search assets..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-9"
+        />
+      </div>
 
-      {assets && assets.length > 0 && (
-        <div className="text-sm text-muted-foreground">
-          Total: {assets.length} asset{assets.length !== 1 ? "s" : ""}
-        </div>
-      )}
+      {/* Table */}
+      <div className="bg-white rounded-lg border border-slate-200">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Asset Tag</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Ministry</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Quantity</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              [...Array(5)].map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell>
+                    <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-32" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-20" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-28" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-6 w-20" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-12" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-8 w-16 ml-auto" />
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : assets && assets.length > 0 ? (
+              assets.map((asset: any) => (
+                <TableRow key={asset.id}>
+                  <TableCell className="font-medium">{asset.asset_tag_number}</TableCell>
+                  <TableCell className="max-w-xs truncate">
+                    {asset.asset_description || "—"}
+                  </TableCell>
+                  <TableCell>{asset.category}</TableCell>
+                  <TableCell>{ministryMap.get(asset.ministry_assigned) || "—"}</TableCell>
+                  <TableCell>{asset.physical_location || "—"}</TableCell>
+                  <TableCell>{getStatusBadge(asset.asset_status)}</TableCell>
+                  <TableCell>
+                    {asset.quantity} {asset.unit_of_measure}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Link href={`/inventory/assets/${asset.id}`}>
+                      <Button variant="ghost" size="sm">
+                        View
+                      </Button>
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-12">
+                  <p className="text-slate-500">No assets found</p>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

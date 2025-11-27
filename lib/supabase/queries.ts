@@ -8,7 +8,17 @@ import { createClient } from "./client";
 export async function getAssets() {
   const supabase = createClient();
   // Query from inventory schema
-  const { data, error } = await supabase.schema("inventory").from("asset").select("*");
+  const { data, error } = await supabase
+    .schema("inventory")
+    .from("asset")
+    .select("*")
+    .order("created_at", { ascending: false });
+  return { data, error };
+}
+
+export async function getMinistries() {
+  const supabase = createClient();
+  const { data, error } = await supabase.from("ministry").select("*");
   return { data, error };
 }
 
