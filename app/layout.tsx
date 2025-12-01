@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: "ALIC Inventory Management",
   description: "Fixed Asset Inventory Management System for Church Branches",
   icons: {
-    icon: '/data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+    icon: "/alic-logo.png",
   },
 };
 
@@ -26,4 +26,3 @@ export default function RootLayout({
     </html>
   );
 }
-

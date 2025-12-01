@@ -32,6 +32,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     },
     { href: "/inventory/transfers", label: "Transfers", icon: ArrowRightLeft, roles: ["all"] },
     { href: "/inventory/disposals", label: "Disposals", icon: Trash2, roles: ["all"] },
+    {
+      href: "/admin",
+      label: "Admin",
+      icon: LayoutDashboard,
+      roles: ["system_admin"],
+    },
   ];
 
   // Filter navigation based on user roles
