@@ -28,6 +28,7 @@ export interface Database {
           name: string;
           location: string | null;
           contact_info: string | null;
+          is_active: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -36,6 +37,7 @@ export interface Database {
           name: string;
           location?: string | null;
           contact_info?: string | null;
+          is_active?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -44,6 +46,7 @@ export interface Database {
           name?: string;
           location?: string | null;
           contact_info?: string | null;
+          is_active?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -54,6 +57,7 @@ export interface Database {
           name: string;
           church_branch_id: string;
           contact_info: string | null;
+          is_active: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -62,6 +66,7 @@ export interface Database {
           name: string;
           church_branch_id: string;
           contact_info?: string | null;
+          is_active?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -70,6 +75,7 @@ export interface Database {
           name?: string;
           church_branch_id?: string;
           contact_info?: string | null;
+          is_active?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -163,13 +169,21 @@ export interface Database {
         Args: Record<PropertyKey, never>;
         Returns: boolean;
       };
-      is_finance: {
+      is_asset_manager: {
         Args: Record<PropertyKey, never>;
         Returns: boolean;
       };
       is_ministry_leader: {
         Args: Record<PropertyKey, never>;
         Returns: boolean;
+      };
+      is_admin: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
+      get_user_emails: {
+        Args: { user_ids: string[] };
+        Returns: Array<{ user_id: string; email: string }>;
       };
     };
     Enums: {

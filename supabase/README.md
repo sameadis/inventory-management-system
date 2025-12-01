@@ -7,9 +7,17 @@ This directory contains the database schema and migrations for the ALIC Inventor
 ```
 supabase/
 ├── migrations/
-│   ├── 001_initial_schema.sql    # Core tables, indexes, triggers
-│   └── 002_rls_policies.sql      # Row Level Security policies
-└── seed.sql                       # Seed data (optional, for development)
+│   ├── 001_initial_schema.sql           # Core tables, indexes, triggers
+│   ├── 002_rls_policies.sql             # Row Level Security policies
+│   ├── 003_disposal_workflow.sql        # Disposal workflow enhancements
+│   ├── 004_make_ministry_nullable.sql   # Make ministry nullable
+│   ├── 005_disposal_constraints.sql     # Disposal constraints
+│   ├── 006_add_updated_by.sql           # Add updated_by tracking
+│   ├── 007_admin_module_schema.sql      # Admin module tables & functions
+│   ├── 008_admin_rls_policies.sql       # Admin module RLS policies
+│   ├── 009_seed_admin_roles.sql         # Seed admin roles
+│   └── 010_backfill_existing_data.sql   # Backfill script (template)
+└── seed.sql                              # Seed data (optional, for development)
 ```
 
 ## Schema Overview
@@ -35,6 +43,15 @@ The asset table uses a **single ministry field** (`ministry_assigned`) instead o
 3. Copy and paste each migration file in order:
    - `001_initial_schema.sql`
    - `002_rls_policies.sql`
+   - `003_disposal_workflow.sql`
+   - `004_make_ministry_nullable.sql`
+   - `005_disposal_constraints.sql`
+   - `006_add_updated_by.sql`
+   - **Admin Module (New):**
+   - `007_admin_module_schema.sql`
+   - `008_admin_rls_policies.sql`
+   - `009_seed_admin_roles.sql`
+   - `010_backfill_existing_data.sql` (customize first!)
 4. Click **Run** for each migration
 
 ### Option 2: Supabase CLI (Recommended for Development)
@@ -64,14 +81,13 @@ psql "postgresql://postgres:[YOUR-PASSWORD]@[YOUR-PROJECT-REF].supabase.co:5432/
 \i supabase/migrations/002_rls_policies.sql
 ```
 
-## Initial Setup Steps
+## Admin Module Setup
 
-After applying migrations:
+After applying migrations 007-009:
 
-1. **Create default roles**:
+1. **Verify roles exist**:
 ```sql
--- These should be created automatically by the schema
--- Verify they exist:
+SELECT * FROM public.roles ORDER BY name;
 SELECT * FROM public.roles;
 ```
 

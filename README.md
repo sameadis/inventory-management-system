@@ -128,6 +128,22 @@ In development mode with local Supabase Auth:
 
 After signing in, you can access the inventory dashboard at `/inventory`.
 
+## Key Features
+
+### Inventory Management
+- Asset tracking with full lifecycle management
+- Transfer requests between ministries
+- Disposal workflow with approval process
+- Physical verification tracking
+- Branch-scoped multi-tenancy
+
+### Admin Module (New!)
+- **Branch Management**: Create and manage church branches
+- **Ministry Management**: Organize ministries within branches
+- **User & Role Management**: Assign users to branches/ministries and manage permissions
+- **Role-Based Access Control**: System Admin, Finance, and Ministry Leader roles
+- See [ADMIN_MODULE_GUIDE.md](ADMIN_MODULE_GUIDE.md) for details
+
 ## Project Structure
 
 ```
@@ -135,6 +151,10 @@ alic/inventory-management-system/
 ├── app/                          # Next.js App Router
 │   ├── (inventory)/             # Protected inventory routes
 │   │   ├── layout.tsx           # Inventory layout with header
+│   ├── admin/                   # Admin module routes
+│   │   ├── branches/            # Branch management
+│   │   ├── ministries/          # Ministry management
+│   │   └── users/               # User & role management
 │   │   └── inventory/           # Main inventory pages
 │   │       ├── page.tsx         # Dashboard
 │   │       ├── assets/          # Asset management
