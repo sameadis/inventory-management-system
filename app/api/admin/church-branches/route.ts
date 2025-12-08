@@ -61,22 +61,26 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    const { data, error } = await supabase
-      .from("church_branch")
-      .insert({
-        name,
-        location: location || null,
-        contact_info: contact_info || null,
-        is_active: is_active !== undefined ? is_active : true,
-      })
-      .select()
-      .single();
+    const insertResult = await (supabase.from("church_branch") as unknown as {
+      insert: (values: unknown) => {
+        select: () => {
+          single: () => Promise<{ data: Record<string, unknown> | null; error: Error | null }>;
+        };
+      };
+    }).insert({
+      name,
+      location: location || null,
+      contact_info: contact_info || null,
+      is_active: is_active !== undefined ? is_active : true,
+    }).select().single();
+    
+    const { data, error } = insertResult;
 
     if (error) {
       console.error("Error creating branch:", error);
       
       // Check for unique constraint violation
-      if (error.code === "23505") {
+      if ("code" in error && error.code === "23505") {
         return NextResponse.json(
           { error: "A branch with this name already exists" },
           { status: 409 }

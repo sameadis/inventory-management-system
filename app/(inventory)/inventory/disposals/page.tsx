@@ -143,7 +143,7 @@ export default function DisposalsPage() {
         const { data: profiles, error: profileError } = await supabase
           .from("user_profile")
           .select("id, full_name")
-          .in("id", userIds);
+          .in("id", userIds) as { data: Array<{ id: string; full_name: string }> | null; error: unknown };
 
         if (profileError) {
           console.error("Error fetching user names:", profileError);

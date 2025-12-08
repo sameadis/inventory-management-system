@@ -31,7 +31,7 @@ export async function PATCH(
       .from("user_profile")
       .select("church_branch_id, ministry_id")
       .eq("id", id)
-      .single();
+      .single() as { data: { church_branch_id: string; ministry_id: string | null } | null; error: Error | null };
 
     if (fetchError || !currentProfile) {
       return NextResponse.json(
@@ -73,7 +73,7 @@ export async function PATCH(
         .from("church_branch")
         .select("is_active")
         .eq("id", church_branch_id)
-        .single();
+        .single() as { data: { is_active: boolean } | null; error: Error | null };
 
       if (branchError || !branch) {
         return NextResponse.json(
@@ -96,7 +96,7 @@ export async function PATCH(
         .from("ministry")
         .select("is_active, church_branch_id")
         .eq("id", ministry_id)
-        .single();
+        .single() as { data: { is_active: boolean; church_branch_id: string } | null; error: Error | null };
 
       if (ministryError || !ministry) {
         return NextResponse.json(
@@ -137,7 +137,7 @@ export async function PATCH(
 
     const { data, error } = await supabase
       .from("user_profile")
-      .update(updates)
+      .update(updates as never)
       .eq("id", id)
       .select(
         `

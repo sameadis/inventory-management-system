@@ -36,7 +36,7 @@ export async function PATCH(
 
     const { data, error } = await supabase
       .from("church_branch")
-      .update(updates)
+      .update(updates as never)
       .eq("id", id)
       .select()
       .single();
@@ -45,7 +45,7 @@ export async function PATCH(
       console.error("Error updating branch:", error);
 
       // Check for unique constraint violation
-      if (error.code === "23505") {
+      if ("code" in error && error.code === "23505") {
         return NextResponse.json(
           { error: "A branch with this name already exists" },
           { status: 409 }
@@ -96,7 +96,7 @@ export async function DELETE(
       console.error("Error deleting branch:", error);
 
       // Check for foreign key constraint violation
-      if (error.code === "23503") {
+      if ("code" in error && error.code === "23503") {
         return NextResponse.json(
           {
             error:

@@ -1,5 +1,16 @@
 "use client";
 
+/**
+ * @deprecated This component is deprecated. Use DashboardLayout instead.
+ * Admin pages now use the unified DashboardLayout with admin sections built-in.
+ * The unified navigation includes all admin routes under the "Administration" section.
+ *
+ * Migration:
+ * - Replace AdminLayout with DashboardLayout
+ * - Admin routes are now at /inventory/admin/* paths
+ * - The unified sidenav automatically shows admin sections for system admins
+ */
+
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -17,13 +28,17 @@ interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
+// Updated routes to use /inventory/admin/* paths
 const sections: { id: AdminSection; label: string; href: string }[] = [
-  { id: "events", label: "Event Review", href: "/admin" },
-  { id: "branches", label: "Branches", href: "/admin/branches" },
-  { id: "ministries", label: "Ministries", href: "/admin/ministries" },
-  { id: "users", label: "Users & Roles", href: "/admin/users" },
+  { id: "events", label: "Event Review", href: "/inventory/admin" },
+  { id: "branches", label: "Branches", href: "/inventory/admin/branches" },
+  { id: "ministries", label: "Ministries", href: "/inventory/admin/ministries" },
+  { id: "users", label: "Users & Roles", href: "/inventory/admin/users" },
 ];
 
+/**
+ * @deprecated Use DashboardLayout instead
+ */
 export default function AdminLayout({
   title,
   subtitle,
@@ -138,5 +153,3 @@ export default function AdminLayout({
     </div>
   );
 }
-
-

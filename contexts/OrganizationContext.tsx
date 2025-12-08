@@ -43,21 +43,12 @@ interface OrganizationContextType {
   refetchOrganization: () => Promise<void>;
 }
 
-const OrganizationContext = createContext<OrganizationContextType | undefined>(
-  undefined,
-);
+const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined);
 
-export const OrganizationProvider = ({
-  children,
-}: {
-  children: React.ReactNode;
-}) => {
+export const OrganizationProvider = ({ children }: { children: React.ReactNode }) => {
   const { user, loading: authLoading } = useAuth();
-  const [currentOrganization, setCurrentOrganization] =
-    useState<Organization | null>(null);
-  const [userOrganizations, setUserOrganizations] = useState<
-    UserOrganization[]
-  >([]);
+  const [currentOrganization, setCurrentOrganization] = useState<Organization | null>(null);
+  const [userOrganizations, setUserOrganizations] = useState<UserOrganization[]>([]);
   const [isOrgAdmin, setIsOrgAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,11 +68,14 @@ export const OrganizationProvider = ({
       setLoading(true);
       setError(null);
 
-      const { data: profile } = await supabase
+      const { data: profile } = (await supabase
         .from("profiles")
         .select("default_organization_id")
         .eq("id", user.id)
-        .maybeSingle();
+        .maybeSingle()) as {
+        data: { default_organization_id: string | null } | null;
+        error: Error | null;
+      };
 
       const { data: memberships, error: membershipError } = await supabase
         .from("user_organizations")
@@ -112,7 +106,7 @@ export const OrganizationProvider = ({
             created_at,
             updated_at
           )
-        `,
+        `
         )
         .eq("user_id", user.id);
 
@@ -132,34 +126,30 @@ export const OrganizationProvider = ({
         return;
       }
 
-      const transformedMemberships: UserOrganization[] = memberships.map(
-        (m: any) => ({
-          id: m.id,
-          user_id: m.user_id,
-          organization_id: m.organization_id,
-          role: m.role,
-          is_primary: m.is_primary,
-          joined_at: m.joined_at,
-          email: m.email,
-          organization: m.organizations,
-        }),
-      );
+      const transformedMemberships: UserOrganization[] = memberships.map((m: any) => ({
+        id: m.id,
+        user_id: m.user_id,
+        organization_id: m.organization_id,
+        role: m.role,
+        is_primary: m.is_primary,
+        joined_at: m.joined_at,
+        email: m.email,
+        organization: m.organizations,
+      }));
 
       setUserOrganizations(transformedMemberships);
 
       let currentOrg: Organization | null = null;
       let currentMembership: UserOrganization | null = null;
 
-      if (profile?.default_organization_id) {
+      const defaultOrgId = profile ? profile.default_organization_id : null;
+      if (defaultOrgId) {
         currentMembership =
-          transformedMemberships.find(
-            (m) => m.organization_id === profile.default_organization_id,
-          ) || null;
+          transformedMemberships.find((m) => m.organization_id === defaultOrgId) || null;
       }
 
       if (!currentMembership) {
-        currentMembership =
-          transformedMemberships.find((m) => m.is_primary) || null;
+        currentMembership = transformedMemberships.find((m) => m.is_primary) || null;
       }
 
       if (!currentMembership && transformedMemberships.length > 0) {
@@ -213,5 +203,3 @@ export const useOrganization = () => {
   }
   return context;
 };
-
-

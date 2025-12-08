@@ -54,9 +54,19 @@ export async function GET(request: NextRequest) {
       query = query.eq("church_branch_id", church_branch_id);
     }
 
-    const { data: profiles, error: profilesError } = await query;
+    const { data: profiles, error: profilesError } = await query as { 
+      data: Array<{ 
+        id: string; 
+        full_name: string; 
+        church_branch_id: string; 
+        ministry_id: string | null;
+        created_at: string;
+        updated_at: string;
+      }> | null; 
+      error: Error | null 
+    };
 
-    if (profilesError) {
+    if (profilesError || !profiles) {
       console.error("Error fetching user profiles:", profilesError);
       return NextResponse.json(
         { error: "Failed to fetch users" },
@@ -76,7 +86,10 @@ export async function GET(request: NextRequest) {
         role:roles(id, name, description)
       `
       )
-      .in("user_id", userIds);
+      .in("user_id", userIds) as { 
+        data: Array<{ user_id: string; role: unknown }> | null; 
+        error: Error | null 
+      };
 
     if (rolesError) {
       console.error("Error fetching user roles:", rolesError);
@@ -87,7 +100,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Get emails using database function (doesn't require service role key)
-    const { data: emailData, error: emailError } = await supabase.rpc(
+    const { data: emailData, error: emailError } = await (supabase.rpc as unknown as (
+      fn: string, 
+      params: { user_ids: string[] }
+    ) => Promise<{ data: Array<{ user_id: string; email: string }> | null; error: Error | null }>)(
       'get_user_emails',
       { user_ids: userIds }
     );

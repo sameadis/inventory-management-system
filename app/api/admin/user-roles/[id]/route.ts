@@ -34,7 +34,7 @@ export async function DELETE(
       `
       )
       .eq("id", id)
-      .single();
+      .single() as { data: { user_id: string; role_id: string; role: { name: string } | null } | null; error: Error | null };
 
     if (fetchError || !userRole) {
       return NextResponse.json(
@@ -63,7 +63,7 @@ export async function DELETE(
         .from("user_profile")
         .select("church_branch_id")
         .eq("id", userRole.user_id)
-        .single();
+        .single() as { data: { church_branch_id: string } | null; error: Error | null };
 
       if (!targetProfile || targetProfile.church_branch_id !== userBranchId) {
         return NextResponse.json(

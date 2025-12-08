@@ -18,7 +18,7 @@ export async function updateSession(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>) {
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set(name, value);
             supabaseResponse.cookies.set(name, value, options);
@@ -35,9 +35,7 @@ export async function updateSession(request: NextRequest) {
 
   // Protected routes - require authentication
   const protectedPaths = ["/inventory", "/admin"];
-  const isProtectedPath = protectedPaths.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
-  );
+  const isProtectedPath = protectedPaths.some((path) => request.nextUrl.pathname.startsWith(path));
 
   // If user is not signed in and trying to access protected path, redirect to /auth
   if (!user && isProtectedPath) {
@@ -53,4 +51,3 @@ export async function updateSession(request: NextRequest) {
 
   return supabaseResponse;
 }
-

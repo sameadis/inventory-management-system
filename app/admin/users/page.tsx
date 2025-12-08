@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import AdminLayout from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -184,7 +183,6 @@ export default function UsersPage() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
 
-  // Reset to page 1 when filters change
   const handleBranchFilterChange = (value: string) => {
     setBranchFilter(value);
     setCurrentPage(1);
@@ -272,7 +270,6 @@ export default function UsersPage() {
       user_id: string;
       role_id: string;
     }) => {
-      // First, find the user_role record
       const user = users?.find((u) => u.id === user_id);
       const userRole = user?.roles.find((r) => r.id === role_id);
 
@@ -280,10 +277,6 @@ export default function UsersPage() {
         throw new Error("Role assignment not found");
       }
 
-      // We need to get the user_roles table record ID
-      // For now, we'll need to modify the API to support deletion by user_id + role_id
-      // Or we need to store the user_role.id in the response
-      // Let's assume we can delete by a composite lookup for now
       const response = await fetch(
         `/api/admin/user-roles/${user_id}?role_id=${role_id}`,
         {
@@ -382,7 +375,6 @@ export default function UsersPage() {
 
   const activeInviteMinistries = inviteMinistries?.filter((m) => m.is_active) || [];
 
-  // Get available roles for a user (roles they don't already have)
   const getAvailableRoles = (user: UserProfile) => {
     const userRoleIds = user.roles.map((r) => r.id);
     return roles?.filter((r) => !userRoleIds.includes(r.id)) || [];
@@ -425,12 +417,16 @@ export default function UsersPage() {
   };
 
   return (
-    <AdminLayout
-      title="Users & Roles"
-      subtitle="Manage user profiles, branch assignments, and role permissions"
-      activeSection="users"
-      actions={
-        <div className="flex flex-col gap-2 w-full md:flex-row md:items-center">
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Users & Roles</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage user profiles, branch assignments, and role permissions
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 w-full md:flex-row md:items-center md:w-auto">
           <Input
             placeholder="Search users..."
             value={searchQuery}
@@ -458,8 +454,8 @@ export default function UsersPage() {
             </Button>
           </div>
         </div>
-      }
-    >
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>All Users</CardTitle>
@@ -561,7 +557,6 @@ export default function UsersPage() {
                 <div className="flex items-center gap-1">
                   {Array.from({ length: totalPages }, (_, i) => i + 1)
                     .filter((page) => {
-                      // Show first page, last page, current page, and pages around current
                       return (
                         page === 1 ||
                         page === totalPages ||
@@ -625,7 +620,7 @@ export default function UsersPage() {
                   setFormData({
                     ...formData,
                     church_branch_id: value,
-                    ministry_id: "", // Reset ministry when branch changes
+                    ministry_id: "",
                   });
                 }}
               >
@@ -818,7 +813,7 @@ export default function UsersPage() {
                   setInviteFormData({
                     ...inviteFormData,
                     church_branch_id: value,
-                    ministry_id: "", // Reset ministry when branch changes
+                    ministry_id: "",
                   });
                 }}
               >
@@ -921,7 +916,6 @@ export default function UsersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+    </div>
   );
 }
-

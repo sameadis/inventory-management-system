@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import AdminLayout from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -223,7 +222,6 @@ export default function MinistriesPage() {
 
   const handleEdit = () => {
     if (!selectedMinistry) return;
-    // Don't include church_branch_id in update (can't change branch)
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { church_branch_id, ...updateData } = formData;
     updateMutation.mutate({
@@ -252,11 +250,15 @@ export default function MinistriesPage() {
   const activeBranches = branches?.filter((b) => b.is_active) || [];
 
   return (
-    <AdminLayout
-      title="Ministries"
-      subtitle="Manage ministries within church branches"
-      activeSection="ministries"
-      actions={
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Ministries</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage ministries within church branches
+          </p>
+        </div>
         <div className="flex gap-2">
           <Select value={branchFilter} onValueChange={setBranchFilter}>
             <SelectTrigger className="w-48">
@@ -277,8 +279,8 @@ export default function MinistriesPage() {
             Add Ministry
           </Button>
         </div>
-      }
-    >
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>All Ministries</CardTitle>
@@ -494,7 +496,6 @@ export default function MinistriesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+    </div>
   );
 }
-

@@ -47,12 +47,12 @@ const nextConfig = {
         destination: `${calendarApp}/calendar/:path*`,
       },
       {
-        source: "/admin",
-        destination: `${calendarApp}/admin`,
+        source: "/event-reviews",
+        destination: `${calendarApp}/event-reviews`,
       },
       {
-        source: "/admin/:path*",
-        destination: `${calendarApp}/admin/:path*`,
+        source: "/event-reviews/:path*",
+        destination: `${calendarApp}/event-reviews/:path*`,
       },
       {
         source: "/users",

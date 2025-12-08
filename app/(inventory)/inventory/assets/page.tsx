@@ -108,7 +108,7 @@ export default function AssetsPage() {
         .from("user_profile")
         .select("full_name")
         .eq("id", session.session.user.id)
-        .single();
+        .single() as { data: { full_name: string } | null; error: unknown };
       
       if (error) console.error("Error fetching current user profile:", error);
       return data;
@@ -256,7 +256,7 @@ export default function AssetsPage() {
         .from("user_profile")
         .select("church_branch_id")
         .eq("id", session.session.user.id)
-        .single();
+        .single() as { data: { church_branch_id: string } | null; error: unknown };
       
       if (error) console.error("Error fetching user profile:", error);
       return data;

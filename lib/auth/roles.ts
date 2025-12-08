@@ -31,7 +31,7 @@ export async function getUserRoles(): Promise<string[]> {
   const { data, error } = await supabase
     .from("user_roles")
     .select("role:roles(name)")
-    .eq("user_id", user.id);
+    .eq("user_id", user.id) as { data: Array<{ role: unknown }> | null; error: Error | null };
 
   if (error || !data) {
     return [];
@@ -108,7 +108,7 @@ export async function getUserBranchId(): Promise<string | null> {
     .from("user_profile")
     .select("church_branch_id")
     .eq("id", user.id)
-    .single();
+    .single() as { data: { church_branch_id: string | null } | null; error: Error | null };
 
   if (error || !data) {
     return null;

@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       .from("church_branch")
       .select("is_active")
       .eq("id", church_branch_id)
-      .single();
+      .single() as { data: { is_active: boolean } | null; error: Error | null };
 
     if (branchError || !branch) {
       return NextResponse.json(
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
         .from("ministry")
         .select("is_active, church_branch_id")
         .eq("id", ministry_id)
-        .single();
+        .single() as { data: { is_active: boolean; church_branch_id: string } | null; error: Error | null };
 
       if (ministryError || !ministry) {
         return NextResponse.json(
@@ -114,14 +114,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Create user profile
-    const { error: profileError } = await supabase
-      .from("user_profile")
-      .insert({
-        id: inviteData.user.id,
-        full_name: full_name || email,
-        church_branch_id,
-        ministry_id: ministry_id || null,
-      });
+    const { error: profileError } = await (supabase.from("user_profile") as unknown as {
+      insert: (values: unknown) => Promise<{ error: Error | null }>;
+    }).insert({
+      id: inviteData.user.id,
+      full_name: full_name || email,
+      church_branch_id,
+      ministry_id: ministry_id || null,
+    });
 
     if (profileError) {
       console.error("Error creating user profile:", profileError);
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
           .from("roles")
           .select("name")
           .eq("id", role_id)
-          .single();
+          .single() as { data: { name: string } | null; error: Error | null };
 
         // Asset managers cannot assign system_admin role
         if (!sysAdmin && role?.name === "system_admin") {
@@ -156,7 +156,9 @@ export async function POST(request: NextRequest) {
         }
 
         // Assign the role
-        await supabase.from("user_roles").insert({
+        await (supabase.from("user_roles") as unknown as {
+          insert: (values: unknown) => Promise<{ error: Error | null }>;
+        }).insert({
           user_id: inviteData.user.id,
           role_id,
           assigned_by: currentUser.data.user?.id || null,

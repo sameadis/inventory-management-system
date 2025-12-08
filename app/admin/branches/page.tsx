@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import AdminLayout from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -206,17 +205,21 @@ export default function BranchesPage() {
   };
 
   return (
-    <AdminLayout
-      title="Church Branches"
-      subtitle="Manage church branches across the organization"
-      activeSection="branches"
-      actions={
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Church Branches</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage church branches across the organization
+          </p>
+        </div>
         <Button onClick={() => setIsCreateDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Add Branch
         </Button>
-      }
-    >
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>All Branches</CardTitle>
@@ -412,7 +415,6 @@ export default function BranchesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AdminLayout>
+    </div>
   );
 }
-

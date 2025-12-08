@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       .from("roles")
       .select("name")
       .eq("id", role_id)
-      .single();
+      .single() as { data: { name: string } | null; error: Error | null };
 
     if (roleError || !role) {
       return NextResponse.json({ error: "Role not found" }, { status: 404 });
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
         .from("user_profile")
         .select("church_branch_id")
         .eq("id", user_id)
-        .single();
+        .single() as { data: { church_branch_id: string } | null; error: Error | null };
 
       if (!targetProfile || targetProfile.church_branch_id !== userBranchId) {
         return NextResponse.json(
@@ -71,30 +71,32 @@ export async function POST(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    const { data, error } = await supabase
-      .from("user_roles")
-      .insert({
-        user_id,
-        role_id,
-        assigned_by: user?.id || null,
-      })
-      .select(
-        `
-        id,
-        user_id,
-        role_id,
-        assigned_at,
-        assigned_by,
-        role:roles(id, name, description)
-      `
-      )
-      .single();
+    const insertResult = await (supabase.from("user_roles") as unknown as {
+      insert: (values: unknown) => {
+        select: (columns: string) => {
+          single: () => Promise<{ data: Record<string, unknown> | null; error: Error | null }>;
+        };
+      };
+    }).insert({
+      user_id,
+      role_id,
+      assigned_by: user?.id || null,
+    }).select(`
+      id,
+      user_id,
+      role_id,
+      assigned_at,
+      assigned_by,
+      role:roles(id, name, description)
+    `).single();
+    
+    const { data, error } = insertResult;
 
     if (error) {
       console.error("Error assigning role:", error);
 
       // Check for unique constraint violation
-      if (error.code === "23505") {
+      if ("code" in error && error.code === "23505") {
         return NextResponse.json(
           { error: "User already has this role" },
           { status: 409 }

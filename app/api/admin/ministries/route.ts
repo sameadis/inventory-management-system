@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
       .from("church_branch")
       .select("is_active")
       .eq("id", church_branch_id)
-      .single();
+      .single() as { data: { is_active: boolean } | null; error: Error | null };
 
     if (branchError || !branch) {
       return NextResponse.json(
@@ -122,27 +122,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data, error } = await supabase
-      .from("ministry")
-      .insert({
-        name,
-        church_branch_id,
-        contact_info: contact_info || null,
-        is_active: is_active !== undefined ? is_active : true,
-      })
-      .select(
-        `
-        *,
-        church_branch:church_branch(id, name, location, is_active)
-      `
-      )
-      .single();
+    const insertResult = await (supabase.from("ministry") as unknown as {
+      insert: (values: unknown) => {
+        select: (columns: string) => {
+          single: () => Promise<{ data: Record<string, unknown> | null; error: Error | null }>;
+        };
+      };
+    }).insert({
+      name,
+      church_branch_id,
+      contact_info: contact_info || null,
+      is_active: is_active !== undefined ? is_active : true,
+    }).select(`
+      *,
+      church_branch:church_branch(id, name, location, is_active)
+    `).single();
+    
+    const { data, error } = insertResult;
 
     if (error) {
       console.error("Error creating ministry:", error);
 
       // Check for unique constraint violation
-      if (error.code === "23505") {
+      if ("code" in error && error.code === "23505") {
         return NextResponse.json(
           { error: "A ministry with this name already exists in this branch" },
           { status: 409 }

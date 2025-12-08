@@ -103,41 +103,42 @@ export default function AssetDetailPage() {
       let preparedByName: string | null = null;
       let updatedByName: string | null = null;
 
-      const [ministryResult, branchResult, preparedByResult, updatedByResult] = await Promise.all([
-        data?.ministry_assigned
-          ? supabase
-              .from("ministry")
-              .select("name")
-              .eq("id", data.ministry_assigned)
-              .maybeSingle()
-          : Promise.resolve({ data: null }),
-        data?.church_branch_id
-          ? supabase
-              .from("church_branch")
-              .select("name")
-              .eq("id", data.church_branch_id)
-              .maybeSingle()
-          : Promise.resolve({ data: null }),
-        data?.prepared_by
-          ? supabase
-              .from("user_profile")
-              .select("full_name")
-              .eq("id", data.prepared_by)
-              .maybeSingle()
-          : Promise.resolve({ data: null }),
-        data?.updated_by
-          ? supabase
-              .from("user_profile")
-              .select("full_name")
-              .eq("id", data.updated_by)
-              .maybeSingle()
-          : Promise.resolve({ data: null }),
-      ]);
+      // Fetch related data
+      if (data?.ministry_assigned) {
+        const { data: ministry } = await supabase
+          .from("ministry")
+          .select("name")
+          .eq("id", data.ministry_assigned)
+          .maybeSingle() as { data: { name: string } | null };
+        ministryName = ministry?.name ?? null;
+      }
 
-      ministryName = ministryResult?.data?.name ?? null;
-      churchBranchName = branchResult?.data?.name ?? null;
-      preparedByName = preparedByResult?.data?.full_name ?? null;
-      updatedByName = updatedByResult?.data?.full_name ?? null;
+      if (data?.church_branch_id) {
+        const { data: branch } = await supabase
+          .from("church_branch")
+          .select("name")
+          .eq("id", data.church_branch_id)
+          .maybeSingle() as { data: { name: string } | null };
+        churchBranchName = branch?.name ?? null;
+      }
+
+      if (data?.prepared_by) {
+        const { data: preparedBy } = await supabase
+          .from("user_profile")
+          .select("full_name")
+          .eq("id", data.prepared_by)
+          .maybeSingle() as { data: { full_name: string } | null };
+        preparedByName = preparedBy?.full_name ?? null;
+      }
+
+      if (data?.updated_by) {
+        const { data: updatedBy } = await supabase
+          .from("user_profile")
+          .select("full_name")
+          .eq("id", data.updated_by)
+          .maybeSingle() as { data: { full_name: string } | null };
+        updatedByName = updatedBy?.full_name ?? null;
+      }
 
       return {
         ...data,

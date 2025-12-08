@@ -33,7 +33,7 @@ export async function PATCH(
         .from("ministry")
         .select("church_branch_id")
         .eq("id", id)
-        .single();
+        .single() as { data: { church_branch_id: string } | null };
 
       if (!ministry || ministry.church_branch_id !== userBranchId) {
         return NextResponse.json(
@@ -58,7 +58,7 @@ export async function PATCH(
 
     const { data, error } = await supabase
       .from("ministry")
-      .update(updates)
+      .update(updates as never)
       .eq("id", id)
       .select(
         `
@@ -72,7 +72,7 @@ export async function PATCH(
       console.error("Error updating ministry:", error);
 
       // Check for unique constraint violation
-      if (error.code === "23505") {
+      if ("code" in error && error.code === "23505") {
         return NextResponse.json(
           { error: "A ministry with this name already exists in this branch" },
           { status: 409 }
@@ -126,7 +126,7 @@ export async function DELETE(
         .from("ministry")
         .select("church_branch_id")
         .eq("id", id)
-        .single();
+        .single() as { data: { church_branch_id: string } | null };
 
       if (!ministry || ministry.church_branch_id !== userBranchId) {
         return NextResponse.json(
@@ -142,7 +142,7 @@ export async function DELETE(
       console.error("Error deleting ministry:", error);
 
       // Check for foreign key constraint violation
-      if (error.code === "23503") {
+      if ("code" in error && error.code === "23503") {
         return NextResponse.json(
           {
             error:

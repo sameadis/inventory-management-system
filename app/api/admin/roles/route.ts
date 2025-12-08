@@ -57,20 +57,24 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    const { data, error } = await supabase
-      .from("roles")
-      .insert({
-        name,
-        description: description || null,
-      })
-      .select()
-      .single();
+    const insertResult = await (supabase.from("roles") as unknown as {
+      insert: (values: unknown) => {
+        select: () => {
+          single: () => Promise<{ data: Record<string, unknown> | null; error: Error | null }>;
+        };
+      };
+    }).insert({
+      name,
+      description: description || null,
+    }).select().single();
+    
+    const { data, error } = insertResult;
 
     if (error) {
       console.error("Error creating role:", error);
 
       // Check for unique constraint violation
-      if (error.code === "23505") {
+      if ("code" in error && error.code === "23505") {
         return NextResponse.json(
           { error: "A role with this name already exists" },
           { status: 409 }
@@ -78,7 +82,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Check for check constraint violation (invalid role name)
-      if (error.code === "23514") {
+      if ("code" in error && error.code === "23514") {
         return NextResponse.json(
           { error: "Invalid role name. Must be one of: finance, ministry_leader, system_admin" },
           { status: 400 }

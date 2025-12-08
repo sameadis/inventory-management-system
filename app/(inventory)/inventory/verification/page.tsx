@@ -163,7 +163,7 @@ export default function VerificationPage() {
         const { data: profiles, error: profileError } = await supabase
           .from("user_profile")
           .select("id, full_name")
-          .in("id", verifierIds);
+          .in("id", verifierIds) as { data: Array<{ id: string; full_name: string }> | null; error: unknown };
 
         if (profileError) {
           console.error("Error loading verifier names:", profileError);
