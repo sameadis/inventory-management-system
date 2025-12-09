@@ -67,6 +67,9 @@ export default function VerificationPage() {
     remarks: "",
   });
 
+  // Date constraint - no future verification dates
+  const today = new Date().toISOString().split("T")[0];
+
   // Fetch active assets for verification
   const { data: assets } = useQuery({
     queryKey: ["assets-for-verification"],
@@ -247,6 +250,7 @@ export default function VerificationPage() {
                 <Input
                   id="verification_date"
                   type="date"
+                  max={today}
                   value={formData.verification_date}
                   onChange={(e) =>
                     setFormData({ ...formData, verification_date: e.target.value })

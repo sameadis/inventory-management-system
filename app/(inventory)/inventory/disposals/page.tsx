@@ -79,10 +79,13 @@ export default function DisposalsPage() {
   const [formData, setFormData] = useState({
     asset_id: "",
     disposal_method: "",
-    disposal_date: "",
+    disposal_date: new Date().toISOString().split("T")[0],
     disposal_value: "",
     remarks: "",
   });
+
+  // Date constraint - no future disposal dates
+  const today = new Date().toISOString().split("T")[0];
 
   // Fetch assets
   const { data: assets } = useQuery({
@@ -428,6 +431,7 @@ export default function DisposalsPage() {
                   <Label>Disposal Date *</Label>
                   <Input
                     type="date"
+                    max={today}
                     value={formData.disposal_date}
                     onChange={(e) =>
                       setFormData({ ...formData, disposal_date: e.target.value })
