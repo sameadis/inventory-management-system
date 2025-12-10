@@ -282,26 +282,30 @@ export default function VerificationPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="physical_location">Physical Location</Label>
-                <Select
+                <Input
+                  id="physical_location"
+                  placeholder="e.g., Main Sanctuary, Office Building Room 201"
                   value={formData.physical_location_at_verification}
-                  onValueChange={(value) =>
+                  onChange={(e) =>
                     setFormData({
                       ...formData,
-                      physical_location_at_verification: value,
+                      physical_location_at_verification: e.target.value,
                     })
                   }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select location" />
-                  </SelectTrigger>
-                  <SelectContent>
+                  list="location-suggestions-verification"
+                />
+                {availableLocations.length > 0 && (
+                  <datalist id="location-suggestions-verification">
                     {availableLocations.map((location) => (
-                      <SelectItem key={location} value={location}>
-                        {location}
-                      </SelectItem>
+                      <option key={location} value={location} />
                     ))}
-                  </SelectContent>
-                </Select>
+                  </datalist>
+                )}
+                {availableLocations.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Start typing to see suggestions from existing locations
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">

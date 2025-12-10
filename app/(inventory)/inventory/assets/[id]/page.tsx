@@ -538,24 +538,28 @@ export default function AssetDetailPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="physical_location">Physical Location *</Label>
-                  <Select
+                  <Input
+                    id="physical_location"
+                    placeholder="e.g., Main Sanctuary, Office Building Room 201"
                     value={formData.physical_location}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, physical_location: value })
+                    onChange={(e) =>
+                      setFormData({ ...formData, physical_location: e.target.value })
                     }
                     required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select location" />
-                    </SelectTrigger>
-                    <SelectContent>
+                    list="location-suggestions-edit"
+                  />
+                  {availableLocations.length > 0 && (
+                    <datalist id="location-suggestions-edit">
                       {availableLocations.map((location) => (
-                        <SelectItem key={location} value={location}>
-                          {location}
-                        </SelectItem>
+                        <option key={location} value={location} />
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </datalist>
+                  )}
+                  {availableLocations.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      Start typing to see suggestions from existing assets
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">

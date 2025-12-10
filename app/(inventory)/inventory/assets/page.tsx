@@ -147,6 +147,8 @@ export default function AssetsPage() {
       }
       return (data || []) as Ministry[];
     },
+    staleTime: 0, // Always refetch to get latest ministries
+    refetchOnMount: true, // Refetch when component mounts
   });
 
   const ministryMap = useMemo(() => {
@@ -161,7 +163,15 @@ export default function AssetsPage() {
 
   // Get Finance Ministry ID (must be after ministries query)
   const financeMinistry = useMemo(() => {
-    return ministries?.find((m) => m.name === "Finance Ministry");
+    // Case-insensitive search for Finance Ministry
+    const found = ministries?.find((m) => 
+      m.name.toLowerCase().trim() === "finance ministry"
+    );
+    if (!found && ministries && ministries.length > 0) {
+      console.error("Finance Ministry not found. Available ministries:", 
+        ministries.map(m => ({ name: m.name, id: m.id })));
+    }
+    return found;
   }, [ministries]);
 
   // Get category abbreviation for tag generation
@@ -310,7 +320,12 @@ export default function AssetsPage() {
       const { data: session } = await supabase.auth.getSession();
       if (!session.session?.user.id) throw new Error("Not authenticated");
       if (!userProfile?.church_branch_id) throw new Error("User profile not found");
-      if (!financeMinistry?.id) throw new Error("Finance Ministry not found");
+      if (!financeMinistry?.id) {
+        const availableNames = ministries?.map(m => `"${m.name}"`).join(", ") || "none";
+        throw new Error(
+          `Finance Ministry not found. Create a ministry with name "Finance Ministry" (case-insensitive). Available: ${availableNames}`
+        );
+      }
 
       const { error } = await supabase
         .schema("inventory")
@@ -633,24 +648,28 @@ export default function AssetsPage() {
                   </h3>
                   <div className="space-y-2">
                     <Label htmlFor="physical_location">Physical Location *</Label>
-                    <Select
+                    <Input
+                      id="physical_location"
+                      placeholder="e.g., Main Sanctuary, Office Building Room 201"
                       value={formData.physical_location}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, physical_location: value })
+                      onChange={(e) =>
+                        setFormData({ ...formData, physical_location: e.target.value })
                       }
                       required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select location" />
-                      </SelectTrigger>
-                      <SelectContent>
+                      list="location-suggestions"
+                    />
+                    {availableLocations.length > 0 && (
+                      <datalist id="location-suggestions">
                         {availableLocations.map((location) => (
-                          <SelectItem key={location} value={location}>
-                            {location}
-                          </SelectItem>
+                          <option key={location} value={location} />
                         ))}
-                      </SelectContent>
-                    </Select>
+                      </datalist>
+                    )}
+                    {availableLocations.length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Start typing to see suggestions from existing assets
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
